@@ -1,0 +1,80 @@
+@model EcommScrapperBenchmark.Models.ProviderConfig
+@{
+    ViewData["Title"] = $"Configure {Model.ProviderName}";
+}
+
+<div class="page-header">
+    <div>
+        <h1>⚙️ Configure @Model.ProviderName</h1>
+        <p class="subtitle">Set API key and connection settings for @Model.ProviderName</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card animate-fade-in-up" style="max-width: 700px;">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ProviderName" />
+
+            <div class="glass-card mb-3" style="background: rgba(108, 92, 231, 0.05); border: 1px solid rgba(108, 92, 231, 0.15);">
+                <div class="d-flex align-center gap-1">
+                    <span class="provider-dot @Model.ProviderName.ToLower()" style="width: 12px; height: 12px;"></span>
+                    <strong style="font-size: 1.1rem;">@Model.ProviderName</strong>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">API Key *</label>
+                <input asp-for="ApiKey" class="form-control" placeholder="Enter your API key..."
+                       type="password" id="apiKeyInput" />
+                <div class="mt-1">
+                    <label class="form-check" style="font-size: 0.8rem; cursor: pointer;">
+                        <input type="checkbox" class="form-check-input" onclick="toggleApiKey()" />
+                        <span class="text-muted">Show API key</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Base URL</label>
+                <input asp-for="BaseUrl" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Auth Type</label>
+                <select asp-for="AuthType" class="form-control">
+                    <option value="Bearer">Bearer Token</option>
+                    <option value="Basic">Basic Auth</option>
+                    <option value="QueryParam">Query Parameter</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Rate Limit (requests per minute)</label>
+                <input asp-for="RateLimitPerMinute" type="number" min="1" max="100" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-check">
+                    <input asp-for="IsActive" type="checkbox" class="form-check-input" />
+                    <span>Active (include in benchmark runs)</span>
+                </label>
+            </div>
+
+            <div class="d-flex gap-1 mt-3">
+                <button type="submit" class="btn btn-success">✓ Save Configuration</button>
+                <a asp-action="Index" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+    </script>
+}

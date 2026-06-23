@@ -1,0 +1,87 @@
+@model IEnumerable<EcommScrapperBenchmark.Models.ProviderConfig>
+@{
+    ViewData["Title"] = "API Providers";
+    var providers = Model.ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1>🔌 API Providers</h1>
+        <p class="subtitle">Configure your scraping API provider keys and settings</p>
+    </div>
+</div>
+
+<div class="alert alert-info mb-3">
+    💡 <strong>Tip:</strong> Add your API key to activate a provider. Providers without keys are skipped during benchmark runs.
+</div>
+
+<div class="table-container animate-fade-in-up">
+    <div class="table-header">
+        <h3>Provider Configurations</h3>
+        <span class="badge badge-info">@providers.Count(p => p.IsConfigured) / @providers.Count configured</span>
+    </div>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th>API Key</th>
+                    <th>Auth Type</th>
+                    <th>Base URL</th>
+                    <th>Rate Limit</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var provider in providers)
+                {
+                    <tr>
+                        <td>
+                            <span class="provider-name">
+                                <span class="provider-dot @provider.ProviderName.ToLower()"></span>
+                                @provider.ProviderName
+                            </span>
+                        </td>
+                        <td>
+                            @if (provider.IsActive && provider.IsConfigured)
+                            {
+                                <span class="badge badge-success">✓ Active</span>
+                            }
+                            else if (provider.IsConfigured && !provider.IsActive)
+                            {
+                                <span class="badge badge-warning">Disabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-neutral">Not Configured</span>
+                            }
+                        </td>
+                        <td>
+                            @if (provider.IsConfigured)
+                            {
+                                <span class="text-success font-mono" style="font-size: 0.75rem;">
+                                    ••••••••@(provider.ApiKey?.Length > 8 ? provider.ApiKey[^4..] : "••••")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not set</span>
+                            }
+                        </td>
+                        <td><span class="badge badge-neutral">@provider.AuthType</span></td>
+                        <td class="text-secondary" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            @(provider.BaseUrl ?? "—")
+                        </td>
+                        <td class="text-secondary">@provider.RateLimitPerMinute/min</td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@provider.Id" class="btn btn-outline btn-sm">
+                                @(provider.IsConfigured ? "Edit" : "Configure")
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

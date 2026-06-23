@@ -1,0 +1,177 @@
+@model IEnumerable<EcommScrapperBenchmark.Models.BenchmarkResult>
+@{
+    ViewData["Title"] = "Run Details";
+    var run = (EcommScrapperBenchmark.Models.BenchmarkRun)ViewBag.Run;
+    var summaries = (List<EcommScrapperBenchmark.Models.ProviderSummary>)ViewBag.ProviderSummaries;
+    var results = Model.ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1>📋 Run #@run.Id Details</h1>
+        <p class="subtitle">Started @run.StartedAt.ToString("MMM dd, yyyy HH:mm:ss") UTC · Duration: @run.Duration</p>
+    </div>
+    <div class="d-flex gap-1">
+        <a asp-action="Dashboard" asp-route-runId="@run.Id" class="btn btn-primary">📊 View in Dashboard</a>
+        <a asp-action="Runs" class="btn btn-outline">← Back to Runs</a>
+    </div>
+</div>
+
+<!-- Run Summary Cards -->
+<div class="stats-grid animate-fade-in-up">
+    <div class="stat-card accent-info">
+        <div class="stat-label">Status</div>
+        <div class="stat-value">
+            @if (run.Status == "Completed") { <span class="text-success">✓ @run.Status</span> }
+            else if (run.Status == "Running") { <span class="text-primary-accent">⏳ @run.Status</span> }
+            else { <span class="text-danger">✗ @run.Status</span> }
+        </div>
+    </div>
+    <div class="stat-card accent-primary">
+        <div class="stat-label">Total Requests</div>
+        <div class="stat-value" style="color: var(--accent-primary-light);">@run.TotalRequests</div>
+    </div>
+    <div class="stat-card accent-success">
+        <div class="stat-label">Successful</div>
+        <div class="stat-value text-success">@run.SuccessfulRequests</div>
+    </div>
+    <div class="stat-card accent-danger">
+        <div class="stat-label">Failed</div>
+        <div class="stat-value text-danger">@run.FailedRequests</div>
+    </div>
+</div>
+
+<!-- Provider Summary for this Run -->
+@if (summaries.Any())
+{
+    <div class="table-container animate-fade-in-up delay-2 mb-3">
+        <div class="table-header">
+            <h3>🏆 Provider Summary (This Run)</h3>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Requests</th>
+                        <th>Success Rate</th>
+                        <th>Avg Response</th>
+                        <th>Quality Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in summaries)
+                    {
+                        <tr>
+                            <td>
+                                <span class="provider-name">
+                                    <span class="provider-dot @s.ProviderName.ToLower()"></span>
+                                    @s.ProviderName
+                                </span>
+                            </td>
+                            <td>@s.TotalRequests (@s.SuccessfulRequests ✓ / @s.FailedRequests ✗)</td>
+                            <td>
+                                <span class="badge @(s.SuccessRate >= 80 ? "badge-success" : s.SuccessRate >= 50 ? "badge-warning" : "badge-danger")">
+                                    @s.SuccessRate%
+                                </span>
+                            </td>
+                            <td>@s.AvgResponseTimeMs.ToString("N0") ms</td>
+                            <td>
+                                <span class="@(s.AvgQualityScore >= 70 ? "text-success" : s.AvgQualityScore >= 40 ? "text-warning" : "text-danger") font-semibold">
+                                    @s.AvgQualityScore.ToString("N1")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Detailed Results -->
+<div class="table-container animate-fade-in-up delay-3">
+    <div class="table-header">
+        <h3>📄 All Results (@results.Count)</h3>
+    </div>
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>Provider</th>
+                    <th>Platform</th>
+                    <th>Status</th>
+                    <th>HTTP</th>
+                    <th>Response</th>
+                    <th>Title</th>
+                    <th>Price</th>
+                    <th>Brand</th>
+                    <th>Quality</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in results)
+                {
+                    <tr>
+                        <td>
+                            <span class="provider-name">
+                                <span class="provider-dot @r.ProviderName.ToLower()"></span>
+                                @r.ProviderName
+                            </span>
+                        </td>
+                        <td><span class="badge badge-neutral">@r.Platform</span></td>
+                        <td>
+                            @if (r.IsSuccess)
+                            {
+                                <span class="badge badge-success">✓ Success</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">✗ Failed</span>
+                            }
+                        </td>
+                        <td class="text-secondary">@(r.HttpStatusCode?.ToString() ?? "—")</td>
+                        <td class="font-semibold">@(r.ResponseTimeMs?.ToString("N0") ?? "—") ms</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" data-tooltip="@r.ExtractedTitle">
+                            @(r.ExtractedTitle ?? "—")
+                        </td>
+                        <td>
+                            @if (r.ExtractedPrice.HasValue)
+                            {
+                                <span class="font-semibold text-success">@r.ExtractedCurrency@r.ExtractedPrice?.ToString("N2")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-secondary">@(r.ExtractedBrand ?? "—")</td>
+                        <td>
+                            @if (r.OverallQualityScore.HasValue)
+                            {
+                                <span class="font-semibold @(r.OverallQualityScore >= 70 ? "text-success" : r.OverallQualityScore >= 40 ? "text-warning" : "text-danger")">
+                                    @r.OverallQualityScore?.ToString("N1")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="text-danger" data-tooltip="@r.ErrorMessage">
+                            @(r.ErrorMessage ?? "—")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(run.Notes))
+{
+    <div class="glass-card mt-3">
+        <strong>Notes:</strong> @run.Notes
+    </div>
+}

@@ -1,0 +1,17 @@
+## Ignore Visual Studio temporary files, build results, and user-specific settings
+.vs/
+.vscode/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Ignore database files or logs if any
+*.log
+*.db
+
+## Ignore app settings secrets (optional, but good practice if you have user secrets)
+# appsettings.json
+# Secrets are managed via dotnet user-secrets

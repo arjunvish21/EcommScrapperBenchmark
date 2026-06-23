@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Scraping API Benchmark</title>
+    <meta name="description" content="Benchmark and compare web scraping API providers for success rate, response time, and data quality." />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container-fluid">
+            <div class="d-flex align-center justify-between w-full">
+                <div class="d-flex align-center gap-2">
+                    <a class="navbar-brand" asp-controller="Benchmark" asp-action="Dashboard">
+                        <span class="brand-icon">⚡</span>
+                        ScrapeBench
+                    </a>
+                    <div class="d-flex gap-1" style="margin-left: 2rem;">
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Benchmark" && ViewContext.RouteData.Values["action"]?.ToString() == "Dashboard" ? "active" : "")"
+                           asp-controller="Benchmark" asp-action="Dashboard">
+                            📊 Dashboard
+                        </a>
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Benchmark" && ViewContext.RouteData.Values["action"]?.ToString() == "Runs" ? "active" : "")"
+                           asp-controller="Benchmark" asp-action="Runs">
+                            🏃 Runs
+                        </a>
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")"
+                           asp-controller="Products" asp-action="Index">
+                            📦 Products
+                        </a>
+                        <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Providers" ? "active" : "")"
+                           asp-controller="Providers" asp-action="Index">
+                            🔌 Providers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success">
+                ✅ @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger">
+                ❌ @TempData["ErrorMessage"]
+            </div>
+        }
+
+        @RenderBody()
+    </main>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

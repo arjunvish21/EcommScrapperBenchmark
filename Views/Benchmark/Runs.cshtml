@@ -1,0 +1,122 @@
+@model IEnumerable<EcommScrapperBenchmark.Models.BenchmarkRun>
+@{
+    ViewData["Title"] = "Benchmark Runs";
+}
+
+<div class="page-header">
+    <div>
+        <h1>🏃 Benchmark Runs</h1>
+        <p class="subtitle">History of all benchmark executions</p>
+    </div>
+    <form asp-controller="Benchmark" asp-action="Start" method="post" class="d-flex gap-1">
+        <input type="text" name="notes" class="form-control" placeholder="Optional notes..." style="width: 250px;" />
+        <button type="submit" class="btn btn-primary" @(ViewBag.IsRunning ? "disabled" : "")>
+            @if ((bool)ViewBag.IsRunning)
+            {
+                <span class="spinner"></span>
+                <span>Running...</span>
+            }
+            else
+            {
+                <span>🚀 New Run</span>
+            }
+        </button>
+    </form>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">🏃</div>
+        <h3>No Benchmark Runs Yet</h3>
+        <p>Start your first benchmark run to begin comparing providers.</p>
+    </div>
+}
+else
+{
+    <div class="table-container animate-fade-in-up">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Run ID</th>
+                        <th>Started</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Success</th>
+                        <th>Failed</th>
+                        <th>Success Rate</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var run in Model)
+                    {
+                        <tr>
+                            <td class="font-semibold">#@run.Id</td>
+                            <td>
+                                <span data-tooltip="@run.StartedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
+                                    @run.StartedAt.ToString("MMM dd, HH:mm")
+                                </span>
+                            </td>
+                            <td class="text-secondary">@run.Duration</td>
+                            <td>
+                                @if (run.Status == "Completed")
+                                {
+                                    <span class="badge badge-success">✓ Completed</span>
+                                }
+                                else if (run.Status == "Running")
+                                {
+                                    <span class="badge badge-running">Running</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger">✗ @run.Status</span>
+                                }
+                            </td>
+                            <td class="font-semibold">@run.TotalRequests</td>
+                            <td class="text-success font-semibold">@run.SuccessfulRequests</td>
+                            <td class="text-danger font-semibold">@run.FailedRequests</td>
+                            <td>
+                                <span class="badge @(run.SuccessRate >= 80 ? "badge-success" : run.SuccessRate >= 50 ? "badge-warning" : "badge-danger")">
+                                    @run.SuccessRate%
+                                </span>
+                            </td>
+                            <td class="text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                @(run.Notes ?? "—")
+                            </td>
+                            <td>
+                                @if (run.Status == "Completed")
+                                {
+                                    <div class="d-flex gap-1">
+                                        <a asp-action="RunDetail" asp-route-id="@run.Id" class="btn btn-outline btn-sm">View Details</a>
+                                        <a asp-action="Dashboard" asp-route-runId="@run.Id" class="btn btn-outline btn-sm">📊 Dashboard</a>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @if ((bool)ViewBag.IsRunning)
+    {
+        <script>
+            setInterval(() => {
+                fetch('/Benchmark/Status')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.isRunning) {
+                            window.location.reload();
+                        }
+                    });
+            }, 5000);
+        </script>
+    }
+}

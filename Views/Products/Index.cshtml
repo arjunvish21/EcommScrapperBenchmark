@@ -1,0 +1,101 @@
+@model IEnumerable<EcommScrapperBenchmark.Models.TestProduct>
+@{
+    ViewData["Title"] = "Test Products";
+    var products = Model.ToList();
+    var platforms = products.Select(p => p.Platform).Distinct().OrderBy(p => p).ToList();
+}
+
+<div class="page-header">
+    <div>
+        <h1>📦 Test Products</h1>
+        <p class="subtitle">Manage product URLs and UPC codes used for benchmarking</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">+ Add Product</a>
+</div>
+
+@if (!products.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <h3>No Test Products</h3>
+        <p>Add product URLs to use in your benchmark runs.</p>
+        <a asp-action="Create" class="btn btn-primary">+ Add First Product</a>
+    </div>
+}
+else
+{
+    @foreach (var platform in platforms)
+    {
+        var platformProducts = products.Where(p => p.Platform == platform).ToList();
+        <div class="table-container mb-3 animate-fade-in-up">
+            <div class="table-header">
+                <h3>
+                    @if (platform == "Amazon") { <span>🛒 </span> }
+                    else if (platform == "HomeDepot") { <span>🏠 </span> }
+                    else if (platform == "Walmart") { <span>🏪 </span> }
+                    @platform
+                </h3>
+                <span class="badge badge-neutral">@platformProducts.Count products</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>URL</th>
+                            <th>UPC Code</th>
+                            <th>Expected Price</th>
+                            <th>Expected Brand</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var product in platformProducts)
+                        {
+                            <tr>
+                                <td class="font-semibold">@(product.ProductName ?? "Unnamed")</td>
+                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <a href="@product.ProductUrl" target="_blank" class="text-primary-accent" style="text-decoration: none;">
+                                        @product.ProductUrl
+                                    </a>
+                                </td>
+                                <td class="font-mono text-secondary">@(product.UpcCode ?? "—")</td>
+                                <td>
+                                    @if (product.ExpectedPrice.HasValue)
+                                    {
+                                        <span class="text-success font-semibold">$@product.ExpectedPrice?.ToString("N2")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-secondary">@(product.ExpectedBrand ?? "—")</td>
+                                <td>
+                                    @if (product.IsActive)
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-neutral">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a asp-action="Edit" asp-route-id="@product.Id" class="btn btn-outline btn-sm">Edit</a>
+                                        <form asp-action="Delete" asp-route-id="@product.Id" method="post"
+                                              onsubmit="return confirm('Delete this product?')">
+                                            <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.375rem 0.75rem;">✗</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}

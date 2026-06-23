@@ -1,0 +1,77 @@
+@model EcommScrapperBenchmark.Models.TestProduct
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<div class="page-header">
+    <div>
+        <h1>✏️ Edit Product</h1>
+        <p class="subtitle">Update product details for @(Model.ProductName ?? "product")</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline">← Back</a>
+</div>
+
+<div class="card animate-fade-in-up" style="max-width: 700px;">
+    <div class="card-body">
+        <form asp-action="Edit" method="post">
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group">
+                <label class="form-label">Platform *</label>
+                <select name="Platform" class="form-control">
+                    @{
+                        var platforms = new[] { ("Amazon", "Amazon"), ("HomeDepot", "Home Depot"), ("Walmart", "Walmart") };
+                    }
+                    @foreach (var (val, display) in platforms)
+                    {
+                        if (Model.Platform == val)
+                        {
+                            <option value="@val" selected>@display</option>
+                        }
+                        else
+                        {
+                            <option value="@val">@display</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Product URL *</label>
+                <input asp-for="ProductUrl" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Product Name</label>
+                <input asp-for="ProductName" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">UPC Code</label>
+                <input asp-for="UpcCode" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Expected Price</label>
+                <input asp-for="ExpectedPrice" type="number" step="0.01" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Expected Brand</label>
+                <input asp-for="ExpectedBrand" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-check">
+                    <input asp-for="IsActive" type="checkbox" class="form-check-input" />
+                    <span>Active (include in benchmark runs)</span>
+                </label>
+            </div>
+
+            <div class="d-flex gap-1 mt-3">
+                <button type="submit" class="btn btn-success">✓ Save Changes</button>
+                <a asp-action="Index" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
