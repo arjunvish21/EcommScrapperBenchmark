@@ -22,13 +22,35 @@ namespace EcommScrapperBenchmark.Services.Providers
         {
             try
             {
-                var payload = new
+                var payload = new[]
                 {
-                    url = productUrl,
-                    format = "json"
+                    new { url = productUrl }
                 };
 
-                var request = new HttpRequestMessage(HttpMethod.Post, baseUrl)
+                var targetUrl = baseUrl;
+                if (baseUrl.Contains('?'))
+                {
+                    var parts = baseUrl.Split('?', 2);
+                    var queryParams = parts[1].Split('&')
+                        .Select(p => p.Split('=', 2))
+                        .Where(p => p.Length == 2)
+                        .ToDictionary(p => p[0].Trim().ToLower(), p => p[1].Trim(), StringComparer.OrdinalIgnoreCase);
+
+                    string? datasetId = null;
+                    if (productUrl.Contains("amazon.com", StringComparison.OrdinalIgnoreCase))
+                        queryParams.TryGetValue("amazon", out datasetId);
+                    else if (productUrl.Contains("walmart.com", StringComparison.OrdinalIgnoreCase))
+                        queryParams.TryGetValue("walmart", out datasetId);
+                    else if (productUrl.Contains("homedepot.com", StringComparison.OrdinalIgnoreCase))
+                        queryParams.TryGetValue("homedepot", out datasetId);
+
+                    if (!string.IsNullOrEmpty(datasetId))
+                    {
+                        targetUrl = $"{parts[0]}?dataset_id={datasetId}&format=json";
+                    }
+                }
+
+                var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
                 {
                     Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json")
                 };
@@ -44,6 +66,10 @@ namespace EcommScrapperBenchmark.Services.Providers
                 }
 
                 var json = JToken.Parse(body);
+                if (json is JArray jArray)
+                {
+                    json = jArray.FirstOrDefault() ?? json;
+                }
 
                 return new ScrapingResponse
                 {

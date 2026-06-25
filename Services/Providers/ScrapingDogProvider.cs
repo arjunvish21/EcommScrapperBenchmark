@@ -23,6 +23,25 @@ namespace EcommScrapperBenchmark.Services.Providers
             {
                 var url = $"{baseUrl}?api_key={apiKey}&url={HttpUtility.UrlEncode(productUrl)}&dynamic=true";
 
+                try
+                {
+                    var baseUri = new Uri(baseUrl);
+                    var rootUrl = $"{baseUri.Scheme}://{baseUri.Host}";
+
+                    if (productUrl.Contains("amazon.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        url = $"{rootUrl}/amazon/product?api_key={apiKey}&url={HttpUtility.UrlEncode(productUrl)}";
+                    }
+                    else if (productUrl.Contains("walmart.com", StringComparison.OrdinalIgnoreCase))
+                    {
+                        url = $"{rootUrl}/walmart/product?api_key={apiKey}&url={HttpUtility.UrlEncode(productUrl)}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse base URL for ScrapingDog, using configured baseUrl.");
+                }
+
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
 
                 var (response, elapsedMs, body) = await ExecuteRequestAsync(request, ct);

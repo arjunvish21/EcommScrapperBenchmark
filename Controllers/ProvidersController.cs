@@ -38,12 +38,6 @@ namespace EcommScrapperBenchmark.Controllers
                 return View(config);
             }
 
-            // Auto-activate if API key is provided
-            if (!string.IsNullOrWhiteSpace(config.ApiKey))
-            {
-                config.IsActive = true;
-            }
-
             await _providerRepo.UpdateAsync(config);
             TempData["SuccessMessage"] = $"Provider '{config.ProviderName}' updated successfully.";
             return RedirectToAction(nameof(Index));

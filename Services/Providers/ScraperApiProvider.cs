@@ -21,14 +21,8 @@ namespace EcommScrapperBenchmark.Services.Providers
         {
             try
             {
-                // Use structured data endpoint if available for the platform
-                var url = $"{baseUrl}/structured/amazon/product?api_key={apiKey}&url={HttpUtility.UrlEncode(productUrl)}";
-
-                // Fall back to universal endpoint for non-Amazon URLs
-                if (!productUrl.Contains("amazon.com", StringComparison.OrdinalIgnoreCase))
-                {
-                    url = $"{baseUrl}?api_key={apiKey}&url={HttpUtility.UrlEncode(productUrl)}&render=true&autoparse=true";
-                }
+                // Call universal autoparse endpoint directly with url parameter
+                var url = $"{baseUrl}?api_key={apiKey}&url={HttpUtility.UrlEncode(productUrl)}&output_format=json&autoparse=true";
 
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
 
@@ -53,12 +47,12 @@ namespace EcommScrapperBenchmark.Services.Providers
                     ResponseSizeBytes = Encoding.UTF8.GetByteCount(body),
                     Title = SafeGetString(json, "name", "title", "product_name"),
                     Price = SafeGetDecimal(json, "pricing", "price", "final_price"),
-                    Currency = SafeGetString(json, "currency"),
+                    Currency = SafeGetString(json, "currency", "price_currency"),
                     Brand = SafeGetString(json, "brand", "manufacturer"),
                     Upc = SafeGetString(json, "upc", "gtin"),
-                    Availability = SafeGetString(json, "availability", "in_stock"),
+                    Availability = SafeGetString(json, "availability", "in_stock", "product_availability", "availability_status"),
                     ImageUrl = SafeGetString(json, "image", "images[0]", "main_image"),
-                    Description = SafeGetString(json, "description", "product_description"),
+                    Description = SafeGetString(json, "description", "product_description", "product_short_description", "full_description"),
                     Rating = SafeGetDecimal(json, "rating", "stars", "average_rating"),
                     ReviewCount = SafeGetInt(json, "reviews_count", "total_reviews", "ratings_count")
                 };

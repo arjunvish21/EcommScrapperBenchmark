@@ -116,7 +116,7 @@ GO
 IF NOT EXISTS (SELECT 1 FROM ProviderConfig)
 BEGIN
     INSERT INTO ProviderConfig (ProviderName, BaseUrl, AuthType, RateLimitPerMinute, IsActive) VALUES
-    ('BrightData', 'https://api.brightdata.com/datasets/v3/trigger', 'Bearer', 10, 0),
+    ('BrightData', 'https://api.brightdata.com/datasets/v3/scrape?amazon=gd_l7q7dkf244hwjntr0&walmart=gd_l95fol7l1ru6rlo116&homedepot=gd_lmusivh019i7g97q2n', 'Bearer', 10, 0),
     ('Zyte', 'https://api.zyte.com/v1/extract', 'Basic', 10, 0),
     ('Oxylabs', 'https://realtime.oxylabs.io/v1/queries', 'Basic', 10, 0),
     ('Decodo', 'https://scraper-api.decodo.com/v2/scrape', 'Basic', 10, 0),
@@ -125,7 +125,7 @@ BEGIN
     ('NetNut', 'https://api.netnut.io/api/v1/scrape', 'Bearer', 10, 0),
     ('ScrapingBee', 'https://app.scrapingbee.com/api/v1/', 'QueryParam', 10, 0),
     ('ScraperAPI', 'https://api.scraperapi.com', 'QueryParam', 10, 0),
-    ('ScrapingDog', 'https://api.scrapingdog.com/scrape', 'QueryParam', 10, 0),
+    ('ScrapingDog', 'https://api.scrapingdog.com', 'QueryParam', 10, 0),
     ('Infatica', 'https://api.infatica.io/scrape', 'Bearer', 10, 0),
     ('Rayobyte', 'https://api.rayobyte.com/scrape', 'Bearer', 10, 0);
 END
