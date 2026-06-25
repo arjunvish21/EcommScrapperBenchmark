@@ -10,8 +10,16 @@ namespace EcommScrapperBenchmark.Data
 
         public BenchmarkDbContext(IConfiguration configuration, ILogger<BenchmarkDbContext> logger)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
+            var baseConnectionString = configuration.GetConnectionString("DefaultConnection")
                 ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+            // Add TrustServerCertificate for development/self-signed certificates
+            var connectionStringBuilder = new SqlConnectionStringBuilder(baseConnectionString)
+            {
+                TrustServerCertificate = true,
+                Encrypt = true
+            };
+            _connectionString = connectionStringBuilder.ConnectionString;
             _logger = logger;
         }
 
