@@ -24,16 +24,41 @@
                 </div>
             </div>
 
-            <div class="form-group">
+            <input type="hidden" asp-for="ApiKey" id="hiddenApiKey" />
+
+            <!-- Standard API Key Group -->
+            <div class="form-group" id="standardKeyGroup">
                 <label class="form-label">API Key *</label>
-                <input asp-for="ApiKey" class="form-control" placeholder="Enter your API key..."
-                       type="password" id="apiKeyInput" />
+                <input type="password" id="tempApiKey" class="form-control" placeholder="Enter your API key..." />
                 <div class="mt-1">
                     <label class="form-check" style="font-size: 0.8rem; cursor: pointer;">
-                        <input type="checkbox" class="form-check-input" onclick="toggleApiKey()" />
+                        <input type="checkbox" class="form-check-input" onclick="togglePasswordVisibility('tempApiKey')" />
                         <span class="text-muted">Show API key</span>
                     </label>
                 </div>
+            </div>
+
+            <!-- Basic Auth (Username/Password) Group -->
+            <div class="form-group" id="basicAuthGroup" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="form-label">Username *</label>
+                        <input type="text" id="tempUsername" class="form-control" placeholder="Enter username..." />
+                    </div>
+                    <div>
+                        <label class="form-label">Password</label>
+                        <input type="password" id="tempPassword" class="form-control" placeholder="Enter password..." />
+                        <div class="mt-1">
+                            <label class="form-check" style="font-size: 0.8rem; cursor: pointer;">
+                                <input type="checkbox" class="form-check-input" onclick="togglePasswordVisibility('tempPassword')" />
+                                <span class="text-muted">Show password</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted mt-1" style="display: block; font-size: 0.8rem;">
+                    ℹ️ For Basic Auth providers, credentials will be securely combined and stored as a composite key.
+                </small>
             </div>
 
             <div class="form-group">
@@ -72,9 +97,81 @@
 
 @section Scripts {
     <script>
-        function toggleApiKey() {
-            const input = document.getElementById('apiKeyInput');
-            input.type = input.type === 'password' ? 'text' : 'password';
+        document.addEventListener('DOMContentLoaded', function () {
+            const authTypeSelect = document.getElementById('AuthType');
+            const hiddenApiKey = document.getElementById('hiddenApiKey');
+            const tempApiKey = document.getElementById('tempApiKey');
+            const tempUsername = document.getElementById('tempUsername');
+            const tempPassword = document.getElementById('tempPassword');
+            const standardKeyGroup = document.getElementById('standardKeyGroup');
+            const basicAuthGroup = document.getElementById('basicAuthGroup');
+
+            function initFields() {
+                const val = hiddenApiKey.value || '';
+                if (authTypeSelect.value === 'Basic') {
+                    if (val.includes(':')) {
+                        const parts = val.split(':');
+                        tempUsername.value = parts[0];
+                        tempPassword.value = parts.slice(1).join(':');
+                    } else {
+                        tempUsername.value = val;
+                        tempPassword.value = '';
+                    }
+                } else {
+                    tempApiKey.value = val;
+                }
+                toggleGroups();
+            }
+
+            function toggleGroups() {
+                if (authTypeSelect.value === 'Basic') {
+                    standardKeyGroup.style.display = 'none';
+                    basicAuthGroup.style.display = 'block';
+                } else {
+                    standardKeyGroup.style.display = 'block';
+                    basicAuthGroup.style.display = 'none';
+
+                    const label = standardKeyGroup.querySelector('.form-label');
+                    const input = document.getElementById('tempApiKey');
+                    const checkboxSpan = standardKeyGroup.querySelector('.text-muted');
+
+                    if (authTypeSelect.value === 'Bearer') {
+                        label.textContent = 'Token *';
+                        input.placeholder = 'Enter your API token...';
+                        checkboxSpan.textContent = 'Show token';
+                    } else {
+                        label.textContent = 'API Key *';
+                        input.placeholder = 'Enter your API key...';
+                        checkboxSpan.textContent = 'Show API key';
+                    }
+                }
+            }
+
+            authTypeSelect.addEventListener('change', toggleGroups);
+
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function (e) {
+                if (authTypeSelect.value === 'Basic') {
+                    const username = tempUsername.value.trim();
+                    const password = tempPassword.value;
+                    if (username || password) {
+                        hiddenApiKey.value = username + ':' + password;
+                    } else {
+                        hiddenApiKey.value = '';
+                    }
+                } else {
+                    hiddenApiKey.value = tempApiKey.value.trim();
+                }
+            });
+
+            initFields();
+        });
+
+        function togglePasswordVisibility(id) {
+            const input = document.getElementById(id);
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
         }
     </script>
 }

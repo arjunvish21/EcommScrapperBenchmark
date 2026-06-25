@@ -35,7 +35,16 @@ namespace EcommScrapperBenchmark.Services.Providers
                 {
                     Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json")
                 };
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", BasicAuth(apiKey));
+
+                if (apiKey.Contains(':'))
+                {
+                    var credentials = apiKey.Split(':', 2);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", BasicAuth(credentials[0], credentials[1]));
+                }
+                else
+                {
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Token", apiKey);
+                }
 
                 var (response, elapsedMs, body) = await ExecuteRequestAsync(request, ct);
 

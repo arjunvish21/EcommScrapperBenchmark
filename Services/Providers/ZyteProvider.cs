@@ -29,11 +29,12 @@ namespace EcommScrapperBenchmark.Services.Providers
                     productOptions = new { extractFrom = "httpResponseBody" }
                 };
 
+                var credentials = apiKey.Contains(':') ? apiKey.Split(':', 2) : new[] { apiKey, "" };
                 var request = new HttpRequestMessage(HttpMethod.Post, baseUrl)
                 {
                     Content = new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json")
                 };
-                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", BasicAuth(apiKey));
+                request.Headers.Authorization = new AuthenticationHeaderValue("Basic", BasicAuth(credentials[0], credentials[1]));
 
                 var (response, elapsedMs, body) = await ExecuteRequestAsync(request, ct);
 
