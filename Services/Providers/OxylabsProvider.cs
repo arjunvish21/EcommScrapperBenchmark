@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -9,10 +10,20 @@ namespace EcommScrapperBenchmark.Services.Providers
     /// Oxylabs Web Scraper API adapter.
     /// POST https://realtime.oxylabs.io/v1/queries with Basic Auth.
     /// Docs: https://developers.oxylabs.io/scraper-apis/web-scraper-api/
+    ///
+    /// Source / input-field rules (confirmed):
+    ///   Amazon  → source="amazon_product",      query=ASIN  (10-char alphanumeric)
+    ///   All other e-commerce URLs (Walmart, eBay, HomeDepot, Target, etc.)
+    ///           → source="universal_ecommerce",  url=full product URL
     /// </summary>
     public class OxylabsProvider : BaseScrapingProvider
     {
         public override string ProviderName => "Oxylabs";
+
+        // Matches ASINs in Amazon URLs: /dp/XXXXXXXXXX, /gp/product/XXXXXXXXXX, /ASIN/XXXXXXXXXX
+        private static readonly Regex AsinRegex =
+            new(@"(?:/dp/|/gp/product/|/ASIN/)([A-Z0-9]{10})",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public OxylabsProvider(IHttpClientFactory httpClientFactory, ILogger<OxylabsProvider> logger)
             : base(httpClientFactory, logger) { }
@@ -25,13 +36,7 @@ namespace EcommScrapperBenchmark.Services.Providers
                 // Oxylabs uses username:password format in ApiKey (e.g. "user:pass")
                 var credentials = apiKey.Contains(':') ? apiKey.Split(':', 2) : new[] { apiKey, "" };
 
-                var payload = new
-                {
-                    source = "universal",
-                    url = productUrl,
-                    parse = true,
-                    render = "html"
-                };
+                var payload = BuildPayload(productUrl);
 
                 var request = new HttpRequestMessage(HttpMethod.Post, baseUrl)
                 {
@@ -50,26 +55,25 @@ namespace EcommScrapperBenchmark.Services.Providers
                 }
 
                 var json = JToken.Parse(body);
-                var results = json["results"];
-                var content = results?.First?["content"] ?? json;
+                var content = json["results"]?.First?["content"] ?? json;
 
                 return new ScrapingResponse
                 {
-                    IsSuccess = true,
-                    HttpStatusCode = (int)response.StatusCode,
-                    ResponseTimeMs = elapsedMs,
-                    RawJson = body,
+                    IsSuccess         = true,
+                    HttpStatusCode    = (int)response.StatusCode,
+                    ResponseTimeMs    = elapsedMs,
+                    RawJson           = body,
                     ResponseSizeBytes = Encoding.UTF8.GetByteCount(body),
-                    Title = SafeGetString(content, "title", "name", "product_name"),
-                    Price = SafeGetDecimal(content, "price", "price_value", "final_price"),
-                    Currency = SafeGetString(content, "currency", "price_currency"),
-                    Brand = SafeGetString(content, "brand", "manufacturer"),
-                    Upc = SafeGetString(content, "upc", "gtin", "ean"),
-                    Availability = SafeGetString(content, "availability", "stock"),
-                    ImageUrl = SafeGetString(content, "image", "main_image", "images[0]"),
-                    Description = SafeGetString(content, "description", "short_description"),
-                    Rating = SafeGetDecimal(content, "rating", "stars"),
-                    ReviewCount = SafeGetInt(content, "reviews_count", "review_count")
+                    Title             = SafeGetString(content, "title", "name", "product_name"),
+                    Price             = SafeGetDecimal(content, "price", "price_value", "final_price"),
+                    Currency          = SafeGetString(content, "currency", "price_currency"),
+                    Brand             = SafeGetString(content, "brand", "manufacturer"),
+                    Upc               = SafeGetString(content, "upc", "gtin", "ean"),
+                    Availability      = SafeGetString(content, "availability", "stock"),
+                    ImageUrl          = SafeGetString(content, "image", "main_image", "images[0]"),
+                    Description       = SafeGetString(content, "description", "short_description"),
+                    Rating            = SafeGetDecimal(content, "rating", "stars"),
+                    ReviewCount       = SafeGetInt(content, "reviews_count", "review_count")
                 };
             }
             catch (Exception ex)
@@ -77,6 +81,26 @@ namespace EcommScrapperBenchmark.Services.Providers
                 _logger.LogError(ex, "Oxylabs scraping failed for {Url}", productUrl);
                 return ScrapingResponse.Failure(ex.Message);
             }
+        }
+
+        // -----------------------------------------------------------------------
+        // Payload builder
+        // -----------------------------------------------------------------------
+        private object BuildPayload(string productUrl)
+        {
+            // Amazon: dedicated source with ASIN in "query"
+            if (productUrl.Contains("amazon.", StringComparison.OrdinalIgnoreCase))
+            {
+                var match = AsinRegex.Match(productUrl);
+                if (match.Success)
+                {
+                    var asin = match.Groups[1].Value.ToUpperInvariant();                    
+                    return new { source = "amazon_product", query = asin, parse = true };
+                }
+            }
+
+            // All other platforms (Walmart, eBay, HomeDepot, Target, etc.) → universal_ecommerce + url            
+            return new { source = "universal_ecommerce", url = productUrl, parse = true };
         }
     }
 }
