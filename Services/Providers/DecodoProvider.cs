@@ -116,6 +116,21 @@ namespace EcommScrapperBenchmark.Services.Providers
 
                 var json = JToken.Parse(body);
                 var content = json["results"]?.First?["content"] ?? json["content"] ?? json;
+                
+                // Decodo often wraps the actual parsed data inside "results" within the content object
+                var data = content["results"] ?? content;
+
+                // Price: flat (Amazon/Walmart) OR nested current_price object
+                var price = SafeGetDecimal(data, "price", "sale_price", "current_price", "final_price", "")
+                            ?? SafeGetDecimal(data["price"], "price", "amount", "value");
+
+                // Rating: flat OR nested { rating, count } object
+                var rating = SafeGetDecimal(data, "rating", "stars", "average_rating")
+                             ?? SafeGetDecimal(data["rating"], "rating", "value")
+                             ?? SafeGetDecimal(data["general"], "rating");
+                var reviewCount = SafeGetInt(data, "reviews_count", "review_count", "ratings_total")
+                                  ?? SafeGetInt(data["rating"], "count", "reviews_count")
+                                  ?? SafeGetInt(data["general"], "reviews_count");
 
                 return new ScrapingResponse
                 {
@@ -124,16 +139,23 @@ namespace EcommScrapperBenchmark.Services.Providers
                     ResponseTimeMs    = elapsedMs,
                     RawJson           = body,
                     ResponseSizeBytes = Encoding.UTF8.GetByteCount(body),
-                    Title             = SafeGetString(content, "title", "name", "product_title"),
-                    Price             = SafeGetDecimal(content, "price", "sale_price", "current_price"),
-                    Currency          = SafeGetString(content, "currency"),
-                    Brand             = SafeGetString(content, "brand", "manufacturer"),
-                    Upc               = SafeGetString(content, "upc", "gtin"),
-                    Availability      = SafeGetString(content, "availability", "stock_status"),
-                    ImageUrl          = SafeGetString(content, "image", "main_image"),
-                    Description       = SafeGetString(content, "description"),
-                    Rating            = SafeGetDecimal(content, "rating", "stars"),
-                    ReviewCount       = SafeGetInt(content, "reviews_count", "review_count")
+                    Title       = SafeGetString(data, "title", "name", "product_title", "product_name")
+                                 ?? SafeGetString(data["general"], "title", "name"),
+                    Price       = price,
+                    Currency    = SafeGetString(data, "currency")
+                                 ?? SafeGetString(data["price"], "currency"),
+                    Brand       = SafeGetString(data, "brand", "manufacturer", "brand_name")
+                                 ?? SafeGetString(data["general"], "brand"),
+                    Upc         = SafeGetString(data, "upc", "gtin", "product_id", "sku")
+                                 ?? SafeGetString(data["general"], "upc", "gtin"),
+                    Availability = SafeGetString(data, "availability", "stock_status", "stock")
+                                 ?? SafeGetString(data["general"], "availability"),
+                    ImageUrl    = SafeGetString(data, "image", "main_image", "images[0]", "thumbnail")
+                                 ?? SafeGetString(data["general"], "image"),
+                    Description = SafeGetString(data, "description", "short_description")
+                                 ?? SafeGetString(data["general"], "description"),
+                    Rating      = rating,
+                    ReviewCount = reviewCount
                 };
             }
             catch (Exception ex)

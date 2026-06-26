@@ -94,12 +94,22 @@ namespace EcommScrapperBenchmark.Repositories
         public async Task<IEnumerable<BenchmarkResult>> GetResultsByRunIdAsync(int runId)
         {
             using var conn = _db.CreateConnection();
-            return await conn.QueryAsync<BenchmarkResult>(@"
-                SELECT br.*, tp.ProductName as 'TestProduct.ProductName', tp.UpcCode as 'TestProduct.UpcCode'
+            var results = await conn.QueryAsync<BenchmarkResult, TestProduct, BenchmarkResult>(@"
+                SELECT br.*,
+                       tp.Id, tp.Platform, tp.ProductUrl, tp.ProductName, tp.UpcCode,
+                       tp.ExpectedPrice, tp.ExpectedBrand, tp.IsActive, tp.CreatedOn, tp.UpdatedOn
                 FROM BenchmarkResult br
                 LEFT JOIN TestProduct tp ON br.TestProductId = tp.Id
                 WHERE br.RunId = @RunId
-                ORDER BY br.ProviderName, br.Platform", new { RunId = runId });
+                ORDER BY br.ProviderName, br.Platform",
+                (br, tp) =>
+                {
+                    br.TestProduct = tp;
+                    return br;
+                },
+                new { RunId = runId },
+                splitOn: "Id");
+            return results;
         }
 
         public async Task<IEnumerable<BenchmarkResult>> GetResultsByRunIdAndProviderAsync(int runId, string providerName)
