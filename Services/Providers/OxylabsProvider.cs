@@ -57,6 +57,20 @@ namespace EcommScrapperBenchmark.Services.Providers
                 var json = JToken.Parse(body);
                 var content = json["results"]?.First?["content"] ?? json;
 
+                // Price: flat decimal (Amazon) OR nested object { value, currency, price } (Walmart universal)
+                var price = SafeGetDecimal(content, "price", "price_upper", "price_lower", "price_value", "final_price", "current_price")
+                            ?? SafeGetDecimal(content["price"], "price", "value", "amount")
+                            ?? SafeGetDecimal(content["pricing"], "price", "current_price");
+
+                // Rating: flat (Amazon) OR nested object { rating, count } (Walmart universal)
+                var rating = SafeGetDecimal(content, "rating", "stars", "rating_stars")
+                             ?? SafeGetDecimal(content["rating"], "rating", "value", "average")
+                             ?? SafeGetDecimal(content["general"], "rating");
+
+                var reviewCount = SafeGetInt(content, "reviews_count", "review_count", "ratings_total")
+                                  ?? SafeGetInt(content["rating"], "count", "reviews_count")
+                                  ?? SafeGetInt(content["general"], "reviews_count");
+
                 return new ScrapingResponse
                 {
                     IsSuccess         = true,
@@ -64,16 +78,24 @@ namespace EcommScrapperBenchmark.Services.Providers
                     ResponseTimeMs    = elapsedMs,
                     RawJson           = body,
                     ResponseSizeBytes = Encoding.UTF8.GetByteCount(body),
-                    Title             = SafeGetString(content, "title", "name", "product_name"),
-                    Price             = SafeGetDecimal(content, "price", "price_value", "final_price"),
-                    Currency          = SafeGetString(content, "currency", "price_currency"),
-                    Brand             = SafeGetString(content, "brand", "manufacturer"),
-                    Upc               = SafeGetString(content, "upc", "gtin", "ean"),
-                    Availability      = SafeGetString(content, "availability", "stock"),
-                    ImageUrl          = SafeGetString(content, "image", "main_image", "images[0]"),
-                    Description       = SafeGetString(content, "description", "short_description"),
-                    Rating            = SafeGetDecimal(content, "rating", "stars"),
-                    ReviewCount       = SafeGetInt(content, "reviews_count", "review_count")
+                    Title             = SafeGetString(content, "title", "name", "product_name", "product_title")
+                                       ?? SafeGetString(content["general"], "title", "name"),
+                    Price             = price,
+                    Currency          = SafeGetString(content, "currency", "price_currency")
+                                       ?? SafeGetString(content["price"], "currency"),
+                    Brand             = SafeGetString(content, "brand", "manufacturer", "brand_name", "vendor")
+                                       ?? SafeGetString(content["general"], "brand"),
+                    Upc               = SafeGetString(content, "upc", "gtin", "ean", "asin")
+                                       ?? SafeGetString(content["meta"], "gtin", "sku")
+                                       ?? SafeGetString(content["general"], "upc", "gtin"),
+                    Availability      = SafeGetString(content, "availability", "stock", "in_stock")
+                                       ?? SafeGetString(content["general"], "availability"),
+                    ImageUrl          = SafeGetString(content, "image", "main_image", "images[0]", "image_url")
+                                       ?? SafeGetString(content["general"], "image"),
+                    Description       = SafeGetString(content, "description", "short_description", "feature_bullets_flat")
+                                       ?? SafeGetString(content["general"], "description"),
+                    Rating            = rating,
+                    ReviewCount       = reviewCount
                 };
             }
             catch (Exception ex)
